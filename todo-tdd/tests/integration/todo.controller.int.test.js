@@ -1,23 +1,33 @@
 const request = require("supertest");
-const app =require("../../app");
-const newTodo = require("../mock-data/new-todo");
-const mongoose = require("mongoose");
-const endPointUrl = "/todos/";
+const app = require("../../app");
+const newTodo = require("../mock-data/new-todo.json");
 
-describe(endPointUrl, () => {
-    
-    beforeAll(() => {
-        mongoose.connect('mongodb://localhost:27017/Cluster0', { useNewUrlParser: true, useUnifiedTopology: true });
-    })
+const endpointUrl = "/todos/";
 
-    it("POST" + endPointUrl, async () => {
-        jest.setTimeout(15000);
-        const response = await request(app)
-        .post(endPointUrl)
-        .send(newTodo);
-        expect(response.statusCode).toBe(201);
-        expect(response.body.title).toBe(newTodo.title);
-        expect(response.body.done).toBe(newTodo.done);
-    });
+describe(endpointUrl, () => {
 
+  test("GET " +endpointUrl, async()=>{
+    const response = await request(app).get(endpointUrl);
+    expect(response.statusCode).toBe(200);
+    expect(Array.isArray(response.body)).toBeTruthy;
+    expect(response.body[0].title).toBeDefined();
+    expect(response.body[0].done).toBeDefined();
+  })
+
+  it("POST " + endpointUrl, async () => {
+    const response = await request(app)
+      .post(endpointUrl)
+      .send(newTodo);
+    expect(response.statusCode).toBe(201);
+    expect(response.body.title).toBe(newTodo.title);
+    expect(response.body.done).toBe(newTodo.done);
+  });
 });
+
+it("should return error 500 on malformed data with POST" + endpointUrl, async() => {
+    const response = await request(app)
+    .post(endpointUrl)
+    .send({title: "Missing Done Property"});
+    expect(response.statusCode).toBe(500)
+    expect(response.body).toStrictEqual({message: "Todo validation failed: done: Path `done` is required."})
+})
